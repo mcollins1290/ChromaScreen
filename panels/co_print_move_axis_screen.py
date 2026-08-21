@@ -300,8 +300,11 @@ class Panel(ScreenPanel, metaclass=Singleton):
              
           
             extruder_array = self._printer.get_temp_store('extruder')
-           
-            extruder_temp_target = extruder_array['targets'][-1]
+            if extruder_array and extruder_array.get('targets'):
+                extruder_temp_target = extruder_array['targets'][-1]
+            else:
+                extruder_temp_target = 0
+
             if(self.desiredExtruderTemp == -1):
                 self.desiredExtruderTemp = 0
                 if(extruder_temp_target >0 ):
@@ -404,4 +407,3 @@ class Panel(ScreenPanel, metaclass=Singleton):
             self.entry.set_text('{:.2f}'.format(new_value))
    
     
-  

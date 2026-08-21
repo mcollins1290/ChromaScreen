@@ -573,7 +573,7 @@ class Panel(ScreenPanel, metaclass=Singleton):
     def change_extruder_temperature(self,temp):
         
         max_temp = float(self._printer.get_config_section('extruder')['max_temp'])
-        if self.validate('extrude', temp, max_temp):
+        if self.validate('extruder', temp, max_temp):
 
             self._screen._ws.klippy.set_tool_temp(self._printer.get_tool_number('extruder'), temp)
             if self.isDisable ==False:
