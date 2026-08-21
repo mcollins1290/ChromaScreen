@@ -167,15 +167,14 @@ class Panel(ScreenPanel):
             partitions = [device.device_node for device in context.list_devices(subsystem='block', DEVTYPE='partition', parent=device)]
             logging.debug("All removable partitions: {}".format(", ".join(partitions)))
 
-            sudoPassword = self._screen.pc_password
             command1 = 'mkdir /media/USB-bin'
-            pp = os.system('echo %s|sudo -S %s' % (sudoPassword, command1))
+            pp = os.system('sudo %s' % command1)
 
             command2 = 'mount -t vfat '+ partitions[0] +' /media/USB-bin -o uid=1000'
-            pp = os.system('echo %s|sudo -S %s' % (sudoPassword, command2))
+            pp = os.system('sudo %s' % command2)
             mountpoint = '/media/USB-bin'
             logging.debug("hbp mountpoint= "+ mountpoint)
-            logging.debug("  {}: {}".format(partitions[0], sudoPassword))
+            logging.debug("  {}".format(partitions[0]))
 
             
             logging.debug("Mounted removable partitions:" + str(len(psutil.disk_partitions())))
@@ -189,7 +188,7 @@ class Panel(ScreenPanel):
                     source_folder = self._screen.path_base_brand + self.selected_brand['folderName'] + '/.'
                     destination_data_folder =  os.path.join(os.path.expanduser("~/"), "printer_"+str(self._screen.selected_printer_index)+"_data", "config")
                     command_data = 'cp -a '+ source_folder + ' ' +destination_data_folder
-                    pp = os.system('echo %s|sudo -S %s' % (sudoPassword, command_data))
+                    pp = os.system('sudo %s' % command_data)
                 else:
 
                     source_file = self._screen.klipper_path + '/out'
@@ -199,7 +198,7 @@ class Panel(ScreenPanel):
                
                 logging.debug('cp -r '+ source_file + ' ' +destination_file)
                 command2 = 'cp -r '+ source_file + ' ' +destination_file
-                pp = os.system('echo %s|sudo -S %s' % (sudoPassword, command2))
+                pp = os.system('sudo %s' % command2)
 
                
                 

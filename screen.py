@@ -91,7 +91,6 @@ class cd:
 
 class ChromaScreen(Gtk.Window):
     """ Class for creating a screen for Klipper via HDMI """
-    pc_password = 'coprint'
     config_data = []
     is_debug = False
     is_redirect_not_connected = True
@@ -203,7 +202,6 @@ class ChromaScreen(Gtk.Window):
         except Exception as e:
             logging.exception(e) 
         if(self.config_data != None):
-            self.pc_password = self.config_data['PcPassWord']
             if  'ChromaScreenVersion' in self.config_data:
                 self.version = self.config_data['ChromaScreenVersion']
             else:

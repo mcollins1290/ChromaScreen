@@ -139,15 +139,14 @@ class Panel(ScreenPanel):
 
         locale_code = lang_map.get(lang, 'en_US.UTF-8')
         locale_code_language = language_map.get(lang, 'en_US')
-        sudoPassword = self._screen.pc_password
         command = 'locale-gen ' + locale_code_language
-        p = os.system('echo %s|sudo -S %s' % (sudoPassword, command))
+        p = os.system('sudo %s' % command)
 
         command2 = 'update-locale LANG=' + locale_code
-        p = os.system('echo %s|sudo -S %s' % (sudoPassword, command2))
+        p = os.system('sudo %s' % command2)
 
         command3 = 'update-locale LC_ALL=' + locale_code
-        p = os.system('echo %s|sudo -S %s' % (sudoPassword, command3))
+        p = os.system('sudo %s' % command3)
 
 
     def radioButtonSelected(self, button, lang):

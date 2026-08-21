@@ -203,9 +203,8 @@ class Panel(ScreenPanel):
 
     def set_timezone(self, timezone):
         try:
-            sudoPassword = self._screen.pc_password
             command = 'timedatectl set-timezone ' + timezone
-            p = os.system('echo %s|sudo -S %s' % (sudoPassword, command))
+            p = os.system('sudo %s' % command)
             #subprocess.run(["sudo", "timedatectl", "set-timezone", timezone], check=True)
             print(f"Zaman dilimi başarıyla '{timezone}' olarak ayarlandı.")
         except subprocess.CalledProcessError as e:

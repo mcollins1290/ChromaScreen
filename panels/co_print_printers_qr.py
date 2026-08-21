@@ -158,11 +158,10 @@ class Panel(ScreenPanel):
         logging.info(f"new_values: {printer_data}")
     def upload_config_files(self, button):
         if self.selected_printer:
-            sudoPassword = self._screen.pc_password
             source_folder = self._screen.path_base_brand + self.selected_printer['folderName'] + '/.'
             destination_data_folder =  os.path.join(os.path.expanduser("~/"), "printer_"+str(self._screen.selected_printer_index)+"_data", "config")
             command_data = 'cp -a '+ source_folder + ' ' +destination_data_folder
-            pp = os.system('echo %s|sudo -S %s' % (sudoPassword, command_data))
+            pp = os.system('sudo %s' % command_data)
             self.open_info_dialog()
             self.configFilesCheck.set_active(True)
             self.on_toggled(self.configFilesCheck, "configFiles")
