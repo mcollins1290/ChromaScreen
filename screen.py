@@ -34,7 +34,6 @@ from panels.base_panel import BasePanel
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 version = "1.0.6"
-#config_version = "0.9.0"
 PRINTER_BASE_STATUS_OBJECTS = [
     'bed_mesh',
     'configfile',
@@ -107,7 +106,6 @@ class ChromaScreen(Gtk.Window):
     screensaver = None
     printers = printer = None
     subscriptions = []
-    updating = False
     _ws = None
     screensaver_timeout = None
     reinit_count = 0
@@ -143,7 +141,6 @@ class ChromaScreen(Gtk.Window):
         self.apiclient = None
         self.not_connected_log_file = None
         self.version = version
-        #self.config_version = config_version
         self.dialogs = []
         self.confirm = None
         self.panels_reinit = []
@@ -201,21 +198,6 @@ class ChromaScreen(Gtk.Window):
             self.config_data = json.load(f)
         except Exception as e:
             logging.exception(e) 
-        if(self.config_data != None):
-            if  'ChromaScreenVersion' in self.config_data:
-                self.version = self.config_data['ChromaScreenVersion']
-            else:
-                self.config_data['ChromaScreenVersion'] = self.version
-                with open('config.json', 'w', encoding='utf-8') as file:
-                    json.dump(self.config_data, file, indent=4) 
-                    
-            if 'ConfigVersion' in self.config_data:
-                self.config_version = self.config_data['ConfigVersion']
-            else:
-                self.config_version = '0.9.0'
-                self.config_data['ConfigVersion'] = '0.9.0'
-                with open('config.json', 'w', encoding='utf-8') as file:
-                    json.dump(self.config_data, file, indent=4)
 
         with cd(self.klipper_path):
             self.kconfig = Kconfig(self.path_read)
@@ -921,12 +903,6 @@ class ChromaScreen(Gtk.Window):
                 self.files.process_update(data)
         elif action == "notify_metadata_update":
             self.files.request_metadata(data['filename'])
-        elif action == "notify_update_response":
-            if 'message' in data and 'Error' in data['message']:
-                logging.error(f"{action}:{data['message']}")
-                self.show_popup_message(data['message'], 3)
-                if "ChromaScreen" in data['message']:
-                    self.restart_ks()
         elif action == "notify_power_changed":
             logging.debug("Power status changed: %s", data)
             self.printer.process_power_update(data)
@@ -1006,7 +982,7 @@ class ChromaScreen(Gtk.Window):
 
     def printer_initializing(self, msg, remove=False):
         self.close_popup_message()
-        list = ['co_print_language_select_screen', 'co_print_contract_approval', 'co_print_region_selection', 'co_print_product_naming', 'co_print_wifi_selection', 'co_print_wifi_selection_select', 'co_print_wifi_selection_connect', 'co_print_printing_brand_selection_new', 'co_print_chip_selection', 'co_print_sd_card_selection_process_waiting','co_print_mcu_selection','co_print_mcu_model_selection','co_print_mcu_com_interface','co_print_mcu_bootloader_ofset','co_print_mcu_clock_reference', 'co_print_baud_rate_selection', 'co_print_mcu_flash_chip', 'co_print_mcu_clock_speed', 'co_print_mcu_applicaiton_address', 'co_print_mcu_usb_ids', 'co_print_mcu_optional_feature', 'co_print_chip_selection_loading','co_print_sd_card_selection', 'co_print_printing_selection', 'co_print_printing_selection_port', 'co_print_printing_selection_done', 'co_print_printers_qr', 'co_print_update_screen', 'co_print_test_screen', 'co_print_test_chromahead', 'co_print_test_chromapad_touch', 'co_print_test_chromapad_usb', 'co_print_test_chromahead_passed', 'co_print_test_chromahead_tools', 'co_print_test_chromahead_tools_passed', 'co_print_test_error_filament_cut','co_print_test_error_filament_extrude','co_print_test_error_filament_pull','co_print_test_error_hotend_fan','co_print_test_error_main_fan', 'co_print_test_error_proximity_sensor', 'co_print_test_extrude', 'co_print_test_filament_cut', 'co_print_test_filament_pull', 'co_print_test_hotend_fan', 'co_print_test_main_fan', 'co_print_test_proximity_sensor', 'co_print_test_waiting_head']
+        list = ['co_print_language_select_screen', 'co_print_contract_approval', 'co_print_region_selection', 'co_print_product_naming', 'co_print_wifi_selection', 'co_print_wifi_selection_select', 'co_print_wifi_selection_connect', 'co_print_printing_brand_selection_new', 'co_print_chip_selection', 'co_print_sd_card_selection_process_waiting','co_print_mcu_selection','co_print_mcu_model_selection','co_print_mcu_com_interface','co_print_mcu_bootloader_ofset','co_print_mcu_clock_reference', 'co_print_baud_rate_selection', 'co_print_mcu_flash_chip', 'co_print_mcu_clock_speed', 'co_print_mcu_applicaiton_address', 'co_print_mcu_usb_ids', 'co_print_mcu_optional_feature', 'co_print_chip_selection_loading','co_print_sd_card_selection', 'co_print_printing_selection', 'co_print_printing_selection_port', 'co_print_printing_selection_done', 'co_print_printers_qr', 'co_print_test_screen', 'co_print_test_chromahead', 'co_print_test_chromapad_touch', 'co_print_test_chromapad_usb', 'co_print_test_chromahead_passed', 'co_print_test_chromahead_tools', 'co_print_test_chromahead_tools_passed', 'co_print_test_error_filament_cut','co_print_test_error_filament_extrude','co_print_test_error_filament_pull','co_print_test_error_hotend_fan','co_print_test_error_main_fan', 'co_print_test_error_proximity_sensor', 'co_print_test_extrude', 'co_print_test_filament_cut', 'co_print_test_filament_pull', 'co_print_test_hotend_fan', 'co_print_test_main_fan', 'co_print_test_proximity_sensor', 'co_print_test_waiting_head']
         if len(self._cur_panels) > 0 :
             if self._cur_panels[-1] not in list:
                 if 'co_print_splash_screen' not in self.panels or remove:

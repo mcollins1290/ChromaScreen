@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
 import contextlib
-import json
 import logging
-import os
-import subprocess
-import sys
 
 import gi
-import requests
-
-from ks_includes.functions import internet_on
-from ks_includes.widgets.infodialog import InfoDialog
 
 gi.require_version("Gtk", "3.0")
 from datetime import datetime
@@ -20,7 +12,6 @@ from gi.repository import GLib, Gtk, Pango
 from jinja2 import Environment
 
 from ks_includes.screen_panel import ScreenPanel
-from ks_includes.widgets.areyousuredialog import AreYouSureDialog
 
 
 class BasePanel(ScreenPanel):
@@ -214,27 +205,6 @@ class BasePanel(ScreenPanel):
             self._screen._menu_go_back()
 
     def process_update(self, action, data):
-        if action == "notify_update_response":
-            if self.update_dialog is None:
-                self.show_update_dialog()
-            with contextlib.suppress(KeyError):
-                self.labels['update_progress'].set_text(
-                    f"{self.labels['update_progress'].get_text().strip()}\n"
-                    f"{data['message']}\n")
-            with contextlib.suppress(KeyError):
-                if data['complete']:
-                    logging.info("Update complete")
-                    self._screen.restart_ks()
-                    if self.update_dialog is not None:
-                        try:
-                            self.update_dialog.set_response_sensitive(Gtk.ResponseType.OK, True)
-                            self.update_dialog.get_widget_for_response(Gtk.ResponseType.OK).show()
-                        except AttributeError:
-                            logging.error("error trying to show the updater button the dialog might be closed")
-                            self._screen.updating = False
-                            for dialog in self._screen.dialogs:
-                                self._gtk.remove_dialog(dialog)
-
         if action != "notify_status_update" or self._screen.printer is None:
             return
         devices = self._printer.get_temp_store_devices()
@@ -354,165 +324,3 @@ class BasePanel(ScreenPanel):
                 logging.info(f"Titlebar name type: {self.titlebar_name_type} items: {self.titlebar_items}")
             else:
                 self.titlebar_items = []
-
-    def show_update_dialog(self):
-        if self.update_dialog is not None:
-            return
-        button = [{"name": _("Finish"), "response": Gtk.ResponseType.OK}]
-        self.labels['update_progress'] = Gtk.Label()
-        self.labels['update_progress'].set_halign(Gtk.Align.START)
-        self.labels['update_progress'].set_valign(Gtk.Align.START)
-        self.labels['update_progress'].set_ellipsize(Pango.EllipsizeMode.END)
-        self.labels['update_scroll'] = self._gtk.ScrolledWindow()
-        self.labels['update_scroll'].set_property("overlay-scrolling", True)
-        self.labels['update_scroll'].add(self.labels['update_progress'])
-        self.labels['update_scroll'].connect("size-allocate", self._autoscroll)
-        dialog = self._gtk.Dialog(self._screen, button, self.labels['update_scroll'], self.finish_updating)
-        dialog.connect("delete-event", self.close_update_dialog)
-        dialog.set_response_sensitive(Gtk.ResponseType.OK, False)
-        dialog.get_widget_for_response(Gtk.ResponseType.OK).hide()
-        dialog.set_title(_("Updating"))
-        self.update_dialog = dialog
-        self._screen.updating = True
-
-    def finish_updating(self, dialog, response_id):
-        if response_id != Gtk.ResponseType.OK:
-            return
-        logging.info("Finishing update")
-        self._screen.updating = False
-        self._gtk.remove_dialog(dialog)
-        self._screen.show_panel("co_print_splash_screen", "co_print_splash_screen", "Language", 1, False)
-
-    def close_update_dialog(self, *args):
-        logging.info("Closing update dialog")
-        if self.update_dialog in self._screen.dialogs:
-            self._screen.dialogs.remove(self.update_dialog)
-        self.update_dialog = None
-        self._screen.show_panel("co_print_splash_screen", "co_print_splash_screen", "Language", 1, False)
-
-    def run_command(self, command):
-        """
-        Verilen komutu çalıştırır ve çıktıyı yazdırır.
-        """
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
-            print(f"Komut çalıştırılırken hata oluştu: {stderr.decode('utf-8')}")
-           
-        else:
-            print(stdout.decode('utf-8'))
-    def need_update(self, value):
-        if internet_on():
-            latest_version, download_url = self.get_latest_version(value)
-            if value == 'ChromaScreen':
-                if latest_version > self._screen.version:
-                    return True
-            elif value == 'configs':
-                if latest_version > self._screen.config_version:
-                    return True
-        return False
-    def get_latest_version(self, value):
-        if value == 'ChromaScreen':
-            url = f"https://api.github.com/repos/coprint/ChromaScreen/releases/latest"
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an error for bad responses
-            latest_release = response.json()
-            latest_version = latest_release['tag_name']
-            download_url = latest_release['assets'][0]['browser_download_url']
-            logging.info(f"  {latest_version, download_url}")
-            return latest_version, download_url
-        elif value == 'configs':
-            url = f"https://api.github.com/repos/coprint/configs/releases/latest"
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an error for bad responses
-            latest_release = response.json()
-            latest_version = latest_release['tag_name']
-            download_url = latest_release['assets'][0]['browser_download_url']
-            logging.info(f"  {latest_version, download_url}")
-            return latest_version, download_url
-    
-    def open_dialog(self, update_project):
-        if update_project == "ChromaScreen":
-            content = _("ChromaScreen Will update and restart?")  
-            dialog = AreYouSureDialog( content, self)
-            dialog.get_style_context().add_class("network-dialog")
-            dialog.set_decorated(False)
-            response = dialog.run()
-            if response == Gtk.ResponseType.OK:
-                dialog.destroy()
-                self.update_project()
-            elif response == Gtk.ResponseType.CANCEL:
-                    print('Cancel')
-                    dialog.destroy()
-        elif update_project == "configs":
-            now = datetime.now()
-            content = _("All printers configurations will back up one by one in config folders as configs_backup_"+ now.strftime("%d_%m_%Y")+".zip. The printer.cfg file will not be updated, but the other configuration files will be updated. Do you confirm?")  
-            dialog = AreYouSureDialog( content, self)
-            dialog.get_style_context().add_class("network-dialog")
-            dialog.set_decorated(False)
-            response = dialog.run()
-            if response == Gtk.ResponseType.OK:
-                dialog.destroy()
-                self.update_configs()
-            elif response == Gtk.ResponseType.CANCEL:
-                    print('Cancel')
-                    dialog.destroy()
-    def update_project(self):
-        try:
-           # Proje dizinine git
-            #os.chdir(self._screen.base_dir)
-            # Git pull komutunu çalıştırarak en son değişiklikleri al
-            print("Proje güncelleniyor...")
-            #self.run_command("git pull")
-            self._screen.show_popup_message(_("Updating, please wait..."), level=1)
-            # dialog = InfoDialog(self, "Updating, please wait", False)
-            # dialog.get_style_context().add_class("alert-info-dialog")
-            # dialog.set_decorated(False)
-            # dialog.run()
-            #dialog.set_size_request(0, 0)
-            latest_version, download_url = self.get_latest_version('ChromaScreen')
-            if latest_version > self._screen.version:
-                os.chdir("/tmp/")
-                self.run_command(f"wget {download_url}")
-                self.run_command("unzip ChromaScreen.zip")
-                self.run_command("rsync -av --progress /tmp/ChromaScreen ~/ --exclude scripts/config.json ")
-                self.run_command("rm -rf /tmp/ChromaScreen.zip /tmp/ChromaScreen")
-
-            # Gerekirse bağımlılıkları güncelle
-                requirements_file = os.path.join(self._screen.base_dir, "scripts/ChromaScreen-requirements.txt")
-                if os.path.exists(requirements_file):
-                    print("Bağımlılıklar güncelleniyor...")
-                self.run_command(f"{sys.executable} -m pip install -r scripts/ChromaScreen-requirements.txt")
-                self._screen.config_data['ChromaScreenVersion'] = latest_version
-                json_object = json.dumps(self._screen.config_data, indent=4)
-                with open(self._screen.path_config, "w") as outfile:
-                    outfile.write(json_object)
-                self._screen.close_popup_message()
-                self._screen.restart_ks()
-            print('Ok')
-            
-            # dialog.destroy()
-        except Exception as e:
-            logging.debug(f"Error parsing jinja for title:\n{e}")
-
-    def update_configs(self):
-        try:
-            latest_version, download_url = self.get_latest_version('configs')
-            if latest_version > self._screen.config_version:
-                for i in range(1,9):
-                    destination_data_folder =  os.path.join(os.path.expanduser("~/"), "printer_"+str(i)+"_data", "config")
-                    os.chdir(destination_data_folder)
-                    now = datetime.now()
-                    self.run_command("zip -rv configs_backup_"+ now.strftime("%d_%m_%Y")+".zip .")
-                    os.chdir("/tmp/")
-                    self.run_command(f"wget {download_url}")
-                    self.run_command("unzip configs.zip")
-                    self.run_command('cp -r configs/* '+ destination_data_folder)
-                self.run_command("rm -rf /tmp/configs.zip /tmp/configs")
-                self._screen.config_data['ConfigVersion'] = latest_version
-                json_object = json.dumps(self._screen.config_data, indent=4)
-                with open(self._screen.path_config, "w") as outfile:
-                    outfile.write(json_object)
-                self._screen.restart_ks() 
-        except Exception as e:
-            logging.debug(f"Error parsing jinja for title:\n{e}")

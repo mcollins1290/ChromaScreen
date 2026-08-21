@@ -37,9 +37,6 @@ class ScreenPanel:
         self.content.set_vexpand(True)
         self._show_heater_power = self._config.get_main_config().getboolean('show_heater_power', False)
         self.bts = self._gtk.bsidescale
-
-        self.update_dialog = None
-
     def _autoscroll(self, scroll, *args):
         adj = scroll.get_vadjustment()
         adj.set_value(adj.get_upper() - adj.get_page_size())

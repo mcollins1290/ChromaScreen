@@ -1,23 +1,15 @@
 import contextlib
-import json
 import logging
 import os
 import time
 
 import gi
 
-from ks_includes.functions import internet_on
-from ks_includes.widgets.addnetworkdialog import AddNetworkDialog
-from ks_includes.widgets.areyousuredialog import AreYouSureDialog
 from ks_includes.widgets.bottommenu import BottomMenu
-from ks_includes.widgets.checkbuttonbox import CheckButtonBox
-from ks_includes.widgets.infodialog import InfoDialog
 from ks_includes.widgets.keypad import Keypad
-from ks_includes.widgets.mainbutton import MainButton
-from ks_includes.widgets.progressbar import ProgressBar
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango
+from gi.repository import GLib, Gtk
 
 from ks_includes.screen_panel import ScreenPanel
 
@@ -37,7 +29,6 @@ class Panel(ScreenPanel, metaclass=Singleton):
 
     def __init__(self, screen, title):
         super().__init__(screen, title)
-        box_array = []
         self.current_time_millis = int(round(time.time() * 1000))
         menu = BottomMenu(self, False)
         self.state = self._printer.state
@@ -145,177 +136,9 @@ class Panel(ScreenPanel, metaclass=Singleton):
         #restartButtonsAndLogFilesBox.pack_start(logFilesBox, False, False, 0)
 
 
-        #-----update maganer-----#
-
-        updateIcon = self._gtk.Image("upload", 25, 25)
-        updateManagerLabel = Gtk.Label(_("Update Manager"))
-        updateManagerLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-        updateManagerLabelBox.set_name("update-manager-label-box")
-        updateManagerLabelBox.pack_start(updateIcon, False, False, 0)
-        updateManagerLabelBox.pack_start(updateManagerLabel, False, False, 0)
-        
-        update_resp = self._screen.apiclient.send_request("machine/update/status")
-        if update_resp:
-            self.update_status = update_resp['result']
-            self.version_info = self.update_status['version_info']
-        else:
-            self.update_status = False
-            self.version_info = False
-
-
-
-        self.config_data = None
-        try:
-            f = open(self._screen.path_config, encoding='utf-8')
-       
-            self.config_data = json.load(f)
-        except Exception as e:
-            logging.exception(e) 
-        
-        self.ChromaScreenNeedUpdate = self._screen.base_panel.need_update('ChromaScreen')
-        # self.IsKlipperNeedUpdate = False
-        # self.IsMainsailNeedUpdate = False
-        # if(self.config_data != None) and (self.version_info != False) : 
-        #     if( self.clean_version(self.config_data['KlipperVersion']) > self.clean_version(self.version_info['klipper']['remote_version'])):
-        #         self.IsKlipperNeedUpdate = True
-        #     if(self.clean_version(self.config_data['MainsailVersion']) > self.clean_version(self.version_info['mainsail']['remote_version'])):
-        #         self.IsMainsailNeedUpdate = True
-        isUpdateReqKlipper = False
-        if self.version_info and self.version_info['klipper']['version'] != self.version_info['klipper']['remote_version']:
-            isUpdateReqKlipper = True
-        isUpdateReqMainsail = False
-        if self.version_info and self.version_info['mainsail']['version'] != self.version_info['mainsail']['remote_version']:
-            isUpdateReqMainsail = True
-        isUpdateReqMoonraker = False
-        if self.version_info and self.version_info['moonraker']['version'] != self.version_info['moonraker']['remote_version']:
-            isUpdateReqMoonraker = True
-         #-----chromascreen update-----#
-        chromascreenUpdateLabel = Gtk.Label(_("Chromascreen"), name="kipper-label")
-        chromascreenUpdateLabel.set_justify(Gtk.Justification.LEFT)
-        chromascreenUpdateLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        chromascreenUpdateLabelBox.pack_start(chromascreenUpdateLabel, False, False, 0)
-
-        chromascreenVersionLabel = Gtk.Label(_("Version: ") + self._screen.version, name="klipper-version-label")
-        chromascreenVersionLabel.set_justify(Gtk.Justification.LEFT)
-        chromascreenVersionLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        chromascreenVersionLabelBox.pack_start(chromascreenVersionLabel, False, False, 0)
-        if self.ChromaScreenNeedUpdate:
-            chromascreenUpdateButton = Gtk.Button(_('Update'),name ="update-manager-button")
-            chromascreenUpdateButton.connect("clicked", self.VersionControl, "ChromaScreen")
-            chromascreenVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            chromascreenVersionBox.pack_start(chromascreenUpdateLabelBox, False, False, 0)
-            chromascreenVersionBox.pack_start(chromascreenVersionLabelBox, False, False, 0)
-        else:
-            chromascreenUpdateButton = Gtk.Button(_('Up-to-date'),name ="up-to-date-button")
-            chromascreenVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            chromascreenVersionBox.pack_start(chromascreenUpdateLabelBox, False, False, 0)
-            chromascreenVersionBox.pack_start(chromascreenVersionLabelBox, False, False, 0)
-        chromascreenUpdateBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        chromascreenUpdateBox.set_name("update-box")
-        chromascreenUpdateBox.pack_start(chromascreenVersionBox, False, False, 0)
-        chromascreenUpdateBox.pack_end(chromascreenUpdateButton, False, False, 0)
-        box_array.append(chromascreenUpdateBox)
-        #-----klipper update-----#
-        klipperUpdateLabel = Gtk.Label(_("Klipper"), name="kipper-label")
-        klipperUpdateLabel.set_justify(Gtk.Justification.LEFT)
-        klipperUpdateLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        klipperUpdateLabelBox.pack_start(klipperUpdateLabel, False, False, 0)
-
-        label_text = ''
-        if self.version_info:
-            label_text = _(self.version_info['klipper']['version'])
-        klipperVersionLabel = Gtk.Label(_("Version: ") + label_text, name="klipper-version-label")
-        klipperVersionLabel.set_justify(Gtk.Justification.LEFT)
-        klipperVersionLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        klipperVersionLabelBox.pack_start(klipperVersionLabel, False, False, 0)
-        if isUpdateReqKlipper:
-            klipperUpdateButton = Gtk.Button(_('Update'),name ="update-manager-button")
-            klipperUpdateButton.connect("clicked", self.VersionControl, "klipper")
-            klipperVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            klipperVersionBox.pack_start(klipperUpdateLabelBox, False, False, 0)
-            klipperVersionBox.pack_start(klipperVersionLabelBox, False, False, 0)
-        else:
-            klipperUpdateButton = Gtk.Button(_('Up-to-date'),name ="up-to-date-button")
-            #klipperUpdateButton.connect("clicked", self.klipperUpdateButton)
-            klipperVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            klipperVersionBox.pack_start(klipperUpdateLabelBox, False, False, 0)
-            klipperVersionBox.pack_start(klipperVersionLabelBox, False, False, 0)
-        klipperUpdateBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        klipperUpdateBox.set_name("update-box")
-        klipperUpdateBox.pack_start(klipperVersionBox, False, False, 0)
-        klipperUpdateBox.pack_end(klipperUpdateButton, False, False, 0)
-        box_array.append(klipperUpdateBox)
-        #-----mainsail update-----#
-        mainsailUpdateLabel = Gtk.Label(_("Mainsail"), name="kipper-label")
-        mainsailUpdateLabel.set_justify(Gtk.Justification.LEFT)
-        mainsailUpdateLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        mainsailUpdateLabelBox.pack_start(mainsailUpdateLabel, False, False, 0)
-
-        label_text_mainsail = ''
-        if self.version_info:
-            label_text_mainsail = _(self.version_info['mainsail']['version'])
-        mainsailVersionLabel = Gtk.Label(_("Version: ") + label_text_mainsail, name="klipper-version-label")
-        mainsailVersionLabel.set_justify(Gtk.Justification.LEFT)
-        mainsailVersionLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        mainsailVersionLabelBox.pack_start(mainsailVersionLabel, False, False, 0)
-        if isUpdateReqMainsail:
-            mainsailUpdateButton = Gtk.Button(_('Update'),name ="update-manager-button")
-            mainsailUpdateButton.connect("clicked", self.VersionControl, "mainsail")
-            mainsailVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            mainsailVersionBox.pack_start(mainsailUpdateLabelBox, False, False, 0)
-            mainsailVersionBox.pack_start(mainsailVersionLabelBox, False, False, 0)
-        else:
-            mainsailUpdateButton = Gtk.Button(_('Up-to-date'),name ="up-to-date-button")
-            #klipperUpdateButton.connect("clicked", self.klipperUpdateButton)
-            mainsailVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            mainsailVersionBox.pack_start(mainsailUpdateLabelBox, False, False, 0)
-            mainsailVersionBox.pack_start(mainsailVersionLabelBox, False, False, 0)
-        mainsailUpdateBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        mainsailUpdateBox.set_name("update-box")
-        mainsailUpdateBox.pack_start(mainsailVersionBox, False, False, 0)
-        mainsailUpdateBox.pack_end(mainsailUpdateButton, False, False, 0)
-        box_array.append(mainsailUpdateBox)
-        #-----moonraker update-----#
-        moonrakerUpdateLabel = Gtk.Label(_("Moonraker"), name="kipper-label")
-        moonrakerUpdateLabel.set_justify(Gtk.Justification.LEFT)
-        moonrakerUpdateLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        moonrakerUpdateLabelBox.pack_start(moonrakerUpdateLabel, False, False, 0)
-        label_text = ''
-        if self.version_info:
-            label_text = _(self.version_info['moonraker']['version'])
-        moonrakerVersionLabel = Gtk.Label(_("Version: ") + label_text, name="klipper-version-label")
-        moonrakerVersionLabel.set_justify(Gtk.Justification.LEFT)
-        moonrakerVersionLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        moonrakerVersionLabelBox.pack_start(moonrakerVersionLabel, False, False, 0)
-        if isUpdateReqMoonraker:
-            moonrakerUpdateButton = Gtk.Button(_('Update'),name ="update-manager-button")
-            moonrakerUpdateButton.connect("clicked", self.VersionControl, "klipper")
-            moonrakerVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            moonrakerVersionBox.pack_start(moonrakerUpdateLabelBox, False, False, 0)
-            moonrakerVersionBox.pack_start(moonrakerVersionLabelBox, False, False, 0)
-        else:
-            moonrakerUpdateButton = Gtk.Button(_('Up-to-date'),name ="up-to-date-button")
-            #klipperUpdateButton.connect("clicked", self.klipperUpdateButton)
-            moonrakerVersionBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            moonrakerVersionBox.pack_start(moonrakerUpdateLabelBox, False, False, 0)
-            moonrakerVersionBox.pack_start(moonrakerVersionLabelBox, False, False, 0)
-        moonrakerUpdateBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        moonrakerUpdateBox.set_name("update-box")
-        moonrakerUpdateBox.pack_start(moonrakerVersionBox, False, False, 0)
-        moonrakerUpdateBox.pack_end(moonrakerUpdateButton, False, False, 0)
-        box_array.append(moonrakerUpdateBox)
-        updateManagerBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        updateManagerBox.set_name("update-manager-box")
-        updateManagerBox.pack_start(updateManagerLabelBox, False, False, 0)
-        for box in box_array:
-            updateManagerBox.pack_start(box, False, False, 0)
-            separator = Gtk.HSeparator()
-            separator.get_style_context().add_class("exp-separator")
-            updateManagerBox.pack_start(separator, False, False, 0)
         leftContentBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
         leftContentBox.set_valign(Gtk.Align.START)
         leftContentBox.pack_start(restartButtonsAndLogFilesBox, False, False, 0)
-        leftContentBox.pack_start(updateManagerBox, False, False, 0)
        
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         left_box.set_halign(Gtk.Align.START)
@@ -410,74 +233,10 @@ class Panel(ScreenPanel, metaclass=Singleton):
         self.restartBox.pack_start(self.firmwareRestartButton, False, False, 0)
         self.restartBox.show_all()
     
-    def clean_version(self, version_str):
-        # Başlangıçtaki 'v' karakterini kaldır
-        if version_str.startswith('v'):
-            version_str = version_str[1:]
-        # Ana versiyon numarasını ve ek bilgiyi ayrıştır
-        if '-' in version_str:
-            main_version, build = version_str.split('-')
-            build = int(build)
-        else:
-            main_version = version_str
-            build = 0  # Eğer ek bilgi yoksa build 0 olarak kabul edilir
-        # Ana versiyon numarasını parçalarına ayır (major, minor, patch)
-        major, minor, patch = map(int, main_version.split('.'))
-        return major, minor, patch, build
-    
-    def VersionControl(self, widget, name):
-        if name == 'ChromaScreen':
-            self._screen.base_panel.open_dialog("ChromaScreen")
-        else:
-            isDialogShow = True
-            # if name == "klipper" and self.IsKlipperNeedUpdate:
-            #     isDialogShow = False
-            # if name == "mainsail" and self.IsMainsailNeedUpdate:
-            #     isDialogShow = False
-            # if name == "moonraker" and self.IsMoonrakerNeedUpdate:
-            #     isDialogShow = False
-            # if name == "full" and (self.IsMainsailNeedUpdate and self.self.IsKlipperNeedUpdate):
-            #     isDialogShow = False
-            if isDialogShow:  
-                content = _("Your update may not be compatible with ChromaScreen.\nChromaScreen is compatible with:\nKlipper: v0.12.0-268.\nMoonraker: v0.9.1-0.\nMainsail: v2.12.0.\nStill Do you want to update?")
-                dialog = AreYouSureDialog( content, self)
-                dialog.get_style_context().add_class("network-dialog")
-                dialog.set_decorated(False)
-                response = dialog.run()
-                if response == Gtk.ResponseType.OK:
-                    self.update_program(None, name)
-                    print('Ok')
-                    dialog.destroy()
-                elif response == Gtk.ResponseType.CANCEL:
-                    print('Cancel')
-                    dialog.destroy()
-            else:
-                self.update_program(None, name)
-
     def log_files(self, widget, type):
         page_url = 'co_print_log_files_screen'
         self._screen.show_panel(page_url, page_url, type, 1, False)
 
-    def update_program(self, widget, program):
-        if self._screen.updating or not self.update_status:
-            return
-        if program in self.update_status['version_info']:
-            info = self.update_status['version_info'][program]
-            logging.info(f"program: {info}")
-            if "package_count" in info and info['package_count'] == 0 \
-                    or "version" in info and info['version'] == info['remote_version']:
-                return
-        self._screen.base_panel.show_update_dialog()
-        msg = _("Updating") if program == "full" else _("Starting update for") + f' {program}...'
-        self._screen._websocket_callback("notify_update_response",
-                                         {'application': {program}, 'message': msg, 'complete': False})
-        if program in ['klipper', 'moonraker', 'system', 'full']:
-            logging.info(f"Sending machine.update.{program}")
-            self._screen._ws.send_method(f"machine.update.{program}")
-        else:
-            logging.info(f"Sending machine.update.client name: {program}")
-            self._screen._ws.send_method("machine.update.client", {"name": program})
-    
     def on_click_system_restart(self, button):    
         self._screen._ws.klippy.restart()
 

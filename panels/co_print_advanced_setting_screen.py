@@ -51,8 +51,8 @@ class Panel(ScreenPanel):
         menu = BottomMenu(self, False)
         
         #System Update#
-        systemLabel = Gtk.Label(_("Systems / Update"))
-        systemButton = Gtk.Button(_('Update'),name ="advanced-setting-button")
+        systemLabel = Gtk.Label(_("System"))
+        systemButton = Gtk.Button(_('Open'),name ="advanced-setting-button")
         systemButton.connect("clicked", self.update_button)
         systemBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         systemBox.set_name("adv-settings-box-with-button")
