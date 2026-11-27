@@ -215,7 +215,7 @@ class HomeTab(Gtk.Box):
                 kw["arrowprops"].update({"connectionstyle": connectionstyle})
                 self.ax.annotate('', color='b', xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                             horizontalalignment=horizontalalignment, **kw)
-            l = self.ax.legend(title='%' +str(round(self.this.instant_cpu)), loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
+            l = self.ax.legend(title=f'{round(self.this.instant_cpu)}%', loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
             self.ax.get_legend().get_title().set_color('white')
             plt.setp(l.get_title(), multialignment='center')
             for text in texts:
@@ -278,7 +278,7 @@ class HomeTab(Gtk.Box):
                 kw2["arrowprops"].update({"connectionstyle": connectionstyle})
                 self.ax2.annotate('', color='b', xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                             horizontalalignment=horizontalalignment, **kw)
-            l = self.ax2.legend(title='%' + str(round(self.this.instant_cpu)), loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
+            l = self.ax2.legend(title=f'{round(self.this.instant_mem)}%', loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
             self.ax2.get_legend().get_title().set_color('white')
             plt.setp(l.get_title(), multialignment='center')
             for text in texts:
@@ -400,7 +400,7 @@ class HomeTab(Gtk.Box):
                 kw["arrowprops"].update({"connectionstyle": connectionstyle})
                 self.ax.annotate('', color='b', xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                             horizontalalignment=horizontalalignment, **kw)
-            l = self.ax.legend(title='%' + str(round(cpu)), loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
+            l = self.ax.legend(title=f'{round(cpu)}%', loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
             self.ax.get_legend().get_title().set_color('white')
             plt.setp(l.get_title(), multialignment='center')
             for text in texts:
@@ -426,7 +426,7 @@ class HomeTab(Gtk.Box):
                     kw["arrowprops"].update({"connectionstyle": connectionstyle})
                     self.ax2.annotate('', color='b', xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                                 horizontalalignment=horizontalalignment, **kw)
-                l = self.ax2.legend(title='%' + str(round(mem)), loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
+                l = self.ax2.legend(title=f'{round(mem)}%', loc='center',facecolor='#0E0E0E', edgecolor='#0E0E0E')
                 self.ax2.get_legend().get_title().set_color('white')
                 plt.setp(l.get_title(), multialignment='center')
                 for text in texts:
