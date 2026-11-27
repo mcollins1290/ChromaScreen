@@ -1,6 +1,5 @@
 import logging
 import os
-from ks_includes.KlippyGcodes import KlippyGcodes
 from ks_includes.widgets.bottommenu import BottomMenu
 from ks_includes.widgets.checkbuttonbox import CheckButtonBox
 import gi
@@ -382,10 +381,6 @@ class Panel(ScreenPanel):
         logging.info(f"Starting print: {filename}")
         
         self._screen._ws.klippy.print_start(filename)
-        self._screen._ws.klippy.gcode_script(KlippyGcodes.HOME, self.finished)  
-
-    def finished(self,asd,a,b):
-        logging.info(f"Starting print:")
 
     def image_load(self, filepath):
         pixbuf = self.get_file_image(filepath, 120, 120 ,small=False)

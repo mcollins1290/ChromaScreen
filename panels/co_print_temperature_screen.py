@@ -35,8 +35,10 @@ class Panel(ScreenPanel, metaclass=Singleton):
         self.ExtruderMax_temp = 0
         self.HeaterBedMax_temp = 0
         self.heater_bed_temp = 0
+        self.heater_bed_temp_target = 0
         self.h = 1
         self.extruder_temp = 0
+        self.extruder_temp_target = 0
         self.preheat_options = self._screen._config.get_preheat_options()
         for d in (self._printer.get_tools() + self._printer.get_heaters()):
             self.add_device(d)
